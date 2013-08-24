@@ -16,6 +16,10 @@ func (r *Result) Stdout() string {
 	return r.StdoutBuffer.String()
 }
 
+func (r *Result) Stderr() string {
+	return r.StderrBuffer.String()
+}
+
 func (r *Result) String() (out string) {
 	m := map[string]string{
 		"stdout":  fmt.Sprintf("%d bytes", len(r.StdoutBuffer.String())),
