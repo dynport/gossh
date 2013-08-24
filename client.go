@@ -19,6 +19,7 @@ func New(host, user string) (c *Client) {
 type Client struct {
 	User        string
 	Host        string
+	Port        int
 	Agent       net.Conn
 	Conn        *ssh.ClientConn
 	DebugWriter Writer
@@ -44,6 +45,9 @@ func (c *Client) ConnectWhenNotConnected() (e error) {
 }
 
 func (c *Client) Connect() (e error) {
+	if c.Port == 0 {
+		c.Port = 22
+	}
 	c.Debug("connecting " + c.Host)
 	var auths []ssh.ClientAuth
 
@@ -55,7 +59,7 @@ func (c *Client) Connect() (e error) {
 		User: "root",
 		Auth: auths,
 	}
-	c.Conn, e = ssh.Dial("tcp", c.Host+":22", config)
+	c.Conn, e = ssh.Dial("tcp", fmt.Sprintf("%s:%d", c.Host, c.Port), config)
 	if e != nil {
 		return
 	}
