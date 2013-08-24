@@ -21,10 +21,18 @@ type Client struct {
 	Host        string
 	Port        int
 	Agent       net.Conn
+	password    string
 	Conn        *ssh.ClientConn
 	DebugWriter Writer
 	ErrorWriter Writer
 	InfoWriter  Writer
+}
+
+func (c *Client) Password(user string) (password string, e error) {
+	if c.password != "" {
+		return c.password, nil
+	}
+	return "", fmt.Errorf("password must be set with SetPassword()")
 }
 
 func (c *Client) Close() {
@@ -34,6 +42,10 @@ func (c *Client) Close() {
 	if c.Agent != nil {
 		c.Agent.Close()
 	}
+}
+
+func (c *Client) SetPassword(password string) {
+	c.password = password
 }
 
 func (c *Client) ConnectWhenNotConnected() (e error) {
@@ -50,6 +62,10 @@ func (c *Client) Connect() (e error) {
 	}
 	c.Debug("connecting " + c.Host)
 	var auths []ssh.ClientAuth
+
+	if c.password != "" {
+		auths = append(auths, ssh.ClientAuthPassword(c))
+	}
 
 	if c.Agent, e = net.Dial("unix", os.Getenv("SSH_AUTH_SOCK")); e == nil {
 		auths = append(auths, ssh.ClientAuthAgent(ssh.NewAgentClient(c.Agent)))

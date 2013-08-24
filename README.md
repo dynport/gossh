@@ -2,10 +2,6 @@
 
 Golang ssh library
 
-For now only agent based authentication is implemented (the env variable SSH_AUTH_SOCK must point to the ssh agent socket).
-Hopefully password authentication will soon be added.
-
-
 ## Example
     package main
 
@@ -24,6 +20,9 @@ Hopefully password authentication will soon be added.
 
     func main() {
       client := gossh.New("some.host", "user")
+      // my default agent authentication is used. use
+      // client.SetPassword("<secret>")
+      // for password authentication
       client.DebugWriter = MakeLogger("DEBUG")
       client.InfoWriter = MakeLogger("INFO ")
       client.ErrorWriter = MakeLogger("ERROR")
