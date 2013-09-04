@@ -50,7 +50,6 @@ func (c *Client) SetPassword(password string) {
 
 func (c *Client) ConnectWhenNotConnected() (e error) {
 	if c.Conn != nil {
-		c.Debug("already connected")
 		return
 	}
 	return c.Connect()
