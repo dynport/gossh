@@ -59,7 +59,6 @@ func (c *Client) Connect() (e error) {
 	if c.Port == 0 {
 		c.Port = 22
 	}
-	c.Debug("connecting " + c.Host)
 	var auths []ssh.ClientAuth
 
 	if c.password != "" {
