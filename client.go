@@ -1,10 +1,17 @@
 package gossh
 
 import (
+	"bytes"
 	"code.google.com/p/go.crypto/ssh"
+	"compress/gzip"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
+	"log"
 	"net"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"time"
 )
 
@@ -44,6 +51,21 @@ func (c *Client) Close() {
 	}
 }
 
+func (client *Client) Attach() error {
+	options := []string{"-o", "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no"}
+	if client.User != "" {
+		options = append(options, "-l", client.User)
+	}
+	options = append(options, client.Host)
+	log.Printf("executing %#v", options)
+	cmd := exec.Command("/usr/bin/ssh", options...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
+	cmd.Env = os.Environ()
+	return cmd.Run()
+}
+
 func (c *Client) SetPassword(password string) {
 	c.password = password
 }
@@ -70,7 +92,7 @@ func (c *Client) Connect() (e error) {
 	}
 
 	config := &ssh.ClientConfig{
-		User: "root",
+		User: c.User,
 		Auth: auths,
 	}
 	c.Conn, e = ssh.Dial("tcp", fmt.Sprintf("%s:%d", c.Host, c.Port), config)
@@ -121,6 +143,35 @@ func (c *Client) Error(args ...interface{}) {
 
 func (c *Client) Info(args ...interface{}) {
 	c.Write(c.InfoWriter, args)
+}
+
+var b64 = base64.StdEncoding
+
+func (c *Client) WriteFile(path, content, owner string, mode int) (res *Result, e error) {
+	return c.Execute(c.WriteFileCommand(path, content, owner, mode))
+}
+
+func (c *Client) WriteFileCommand(path, content, owner string, mode int) string {
+	buf := &bytes.Buffer{}
+	zipper := gzip.NewWriter(buf)
+	zipper.Write([]byte(content))
+	zipper.Flush()
+	zipper.Close()
+	encoded := b64.EncodeToString(buf.Bytes())
+	hash := sha256.New()
+	hash.Write([]byte(content))
+	checksum := fmt.Sprintf("%x", hash.Sum(nil))
+	tmpPath := "/tmp/gossh." + checksum
+	dir := filepath.Dir(path)
+	cmd := fmt.Sprintf("sudo mkdir -p %s && echo %s | base64 -d | gunzip | sudo tee %s", dir, encoded, tmpPath)
+	if owner != "" {
+		cmd += " && sudo chown " + owner + " " + tmpPath
+	}
+	if mode > 0 {
+		cmd += fmt.Sprintf(" && sudo chmod %o %s", mode, tmpPath)
+	}
+	cmd = cmd + " && sudo mv " + tmpPath + " " + path
+	return cmd
 }
 
 func (c *Client) Write(writer Writer, args []interface{}) {
