@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -176,4 +177,14 @@ func (c *Client) Write(writer Writer, args []interface{}) {
 	if writer != nil {
 		writer(args...)
 	}
+}
+
+// Returns an HTTP client that sends all requests through the SSH connection (aka tunnelling).
+func NewHttpClient(sshClient *Client) (httpClient *http.Client, e error) {
+	if e = sshClient.ConnectWhenNotConnected(); e != nil {
+		return nil, e
+	}
+	httpClient = &http.Client{}
+	httpClient.Transport = &http.Transport{Proxy: http.ProxyFromEnvironment, Dial: sshClient.Conn.Dial}
+	return httpClient, nil
 }

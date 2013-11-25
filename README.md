@@ -59,4 +59,7 @@ Prints this result:
     2013/08/25 00:31:41 ERROR STDOUT: 0.09 0.13 0.22 1/455 23396
     2013/08/25 00:31:41 ERROR STDERR: cat: /does/not/exists: No such file or directory
 
-
+## Tunnelling HTTP Connections
+For services not bound to the public interface of a machine, tunnelling is a quite nice SSH feature. It allows to use a
+remote service like it is running at the local machine. This concept is used in the HTTP client returned by the
+NewHttpClient function. It is a common net/http.Client, but all requests are sent through the SSH connection given.
