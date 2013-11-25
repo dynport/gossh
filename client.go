@@ -16,11 +16,10 @@ import (
 )
 
 func New(host, user string) (c *Client) {
-	c = &Client{
+	return &Client{
 		User: user,
 		Host: host,
 	}
-	return
 }
 
 type Client struct {
@@ -72,7 +71,7 @@ func (c *Client) SetPassword(password string) {
 
 func (c *Client) ConnectWhenNotConnected() (e error) {
 	if c.Conn != nil {
-		return
+		return nil
 	}
 	return c.Connect()
 }
@@ -97,20 +96,19 @@ func (c *Client) Connect() (e error) {
 	}
 	c.Conn, e = ssh.Dial("tcp", fmt.Sprintf("%s:%d", c.Host, c.Port), config)
 	if e != nil {
-		return
+		return e
 	}
-	return
+	return nil
 }
 
 func (c *Client) Execute(s string) (r *Result, e error) {
 	started := time.Now()
-	e = c.ConnectWhenNotConnected()
-	if e != nil {
-		return
+	if e = c.ConnectWhenNotConnected(); e != nil {
+		return nil, e
 	}
 	ses, e := c.Conn.NewSession()
 	if e != nil {
-		return
+		return nil, e
 	}
 	r = &Result{
 		StdoutBuffer: &LogWriter{LogTo: c.Debug},
@@ -130,7 +128,7 @@ func (c *Client) Execute(s string) (r *Result, e error) {
 	if !r.Success() {
 		e = r.Error
 	}
-	return
+	return r, e
 }
 
 func (c *Client) Debug(args ...interface{}) {
