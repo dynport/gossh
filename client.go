@@ -126,10 +126,7 @@ func (c *Client) Execute(s string) (r *Result, e error) {
 		r.ExitStatus = exitError.ExitStatus()
 	}
 	r.Runtime = time.Now().Sub(started)
-	if !r.Success() {
-		e = r.Error
-	}
-	return r, e
+	return r, r.Error
 }
 
 func (c *Client) Debug(args ...interface{}) {
