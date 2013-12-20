@@ -137,6 +137,9 @@ func (c *Client) Execute(s string) (r *Result, e error) {
 		r.ExitStatus = exitError.ExitStatus()
 	}
 	r.Runtime = time.Now().Sub(started)
+	if !r.Success() {
+		r.Error = fmt.Errorf("process exited with %d", r.ExitStatus)
+	}
 	return r, r.Error
 }
 
