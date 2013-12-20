@@ -111,6 +111,7 @@ func (c *Client) Execute(s string) (r *Result, e error) {
 	if e != nil {
 		return nil, e
 	}
+	defer ses.Close()
 
 	tmodes := ssh.TerminalModes{
 		53:  0,     // disable echoing
@@ -132,7 +133,6 @@ func (c *Client) Execute(s string) (r *Result, e error) {
 	c.Info(fmt.Sprintf("[EXEC  ] %s", s))
 	r.Error = ses.Run(s)
 	c.Info(fmt.Sprintf("=> %.06f", time.Now().Sub(started).Seconds()))
-	ses.Close()
 	if exitError, ok := r.Error.(*ssh.ExitError); ok {
 		r.ExitStatus = exitError.ExitStatus()
 	}
