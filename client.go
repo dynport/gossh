@@ -111,6 +111,17 @@ func (c *Client) Execute(s string) (r *Result, e error) {
 	if e != nil {
 		return nil, e
 	}
+
+	tmodes := ssh.TerminalModes{
+		53:  0,     // disable echoing
+		128: 14400, // input speed = 14.4kbaud
+		129: 14400, // output speed = 14.4kbaud
+	}
+
+	if e := ses.RequestPty("xterm", 80, 40, tmodes); e != nil {
+		return nil, e
+	}
+
 	r = &Result{
 		StdoutBuffer: &LogWriter{LogTo: c.Debug},
 		StderrBuffer: &LogWriter{LogTo: c.Error},
