@@ -70,6 +70,17 @@ func (c *Client) SetPassword(password string) {
 	c.password = password
 }
 
+func (c *Client) Connection() (*ssh.ClientConn, error) {
+	if c.Conn != nil {
+		return c.Conn, nil
+	}
+	e := c.Connect()
+	if e != nil {
+		return nil, e
+	}
+	return c.Conn, nil
+}
+
 func (c *Client) ConnectWhenNotConnected() (e error) {
 	if c.Conn != nil {
 		return nil
