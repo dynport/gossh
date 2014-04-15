@@ -2,7 +2,6 @@ package gossh
 
 import (
 	"bytes"
-	"code.google.com/p/go.crypto/ssh"
 	"compress/gzip"
 	"crypto/sha256"
 	"encoding/base64"
@@ -14,6 +13,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"time"
+
+	"code.google.com/p/go.crypto/ssh"
+	"code.google.com/p/go.crypto/ssh/agent"
 )
 
 func New(host, user string) (c *Client) {
@@ -29,7 +31,7 @@ type Client struct {
 	Port        int
 	Agent       net.Conn
 	password    string
-	Conn        *ssh.ClientConn
+	Conn        *ssh.Client
 	DebugWriter Writer
 	ErrorWriter Writer
 	InfoWriter  Writer
@@ -70,7 +72,7 @@ func (c *Client) SetPassword(password string) {
 	c.password = password
 }
 
-func (c *Client) Connection() (*ssh.ClientConn, error) {
+func (c *Client) Connection() (*ssh.Client, error) {
 	if c.Conn != nil {
 		return c.Conn, nil
 	}
@@ -92,14 +94,12 @@ func (c *Client) Connect() (e error) {
 	if c.Port == 0 {
 		c.Port = 22
 	}
-	var auths []ssh.ClientAuth
 
+	var auths []ssh.AuthMethod
 	if c.password != "" {
-		auths = append(auths, ssh.ClientAuthPassword(c))
-	}
-
-	if c.Agent, e = net.Dial("unix", os.Getenv("SSH_AUTH_SOCK")); e == nil {
-		auths = append(auths, ssh.ClientAuthAgent(ssh.NewAgentClient(c.Agent)))
+		auths = append(auths, ssh.Password(c.password))
+	} else if c.Agent, e = net.Dial("unix", os.Getenv("SSH_AUTH_SOCK")); e == nil {
+		auths = append(auths, ssh.PublicKeysCallback(agent.NewClient(c.Agent).Signers))
 	}
 
 	config := &ssh.ClientConfig{
@@ -107,10 +107,7 @@ func (c *Client) Connect() (e error) {
 		Auth: auths,
 	}
 	c.Conn, e = ssh.Dial("tcp", fmt.Sprintf("%s:%d", c.Host, c.Port), config)
-	if e != nil {
-		return e
-	}
-	return nil
+	return e
 }
 
 func (c *Client) Execute(s string) (r *Result, e error) {
