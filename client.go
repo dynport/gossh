@@ -14,8 +14,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"code.google.com/p/go.crypto/ssh"
-	"code.google.com/p/go.crypto/ssh/agent"
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 )
 
 func New(host, user string) (c *Client) {
