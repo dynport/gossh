@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -59,7 +58,6 @@ func (client *Client) Attach() error {
 		options = append(options, "-l", client.User)
 	}
 	options = append(options, client.Host)
-	log.Printf("executing %#v", options)
 	cmd := exec.Command("/usr/bin/ssh", options...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
