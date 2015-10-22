@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -34,6 +35,7 @@ type Client struct {
 	DebugWriter Writer
 	ErrorWriter Writer
 	InfoWriter  Writer
+	PrivateKey  ssh.Signer
 }
 
 func (c *Client) Password(user string) (password string, e error) {
@@ -88,24 +90,52 @@ func (c *Client) ConnectWhenNotConnected() (e error) {
 	return c.Connect()
 }
 
-func (c *Client) Connect() (e error) {
+func (c *Client) Connect() (err error) {
 	if c.Port == 0 {
 		c.Port = 22
 	}
-
-	var auths []ssh.AuthMethod
-	if c.password != "" {
-		auths = append(auths, ssh.Password(c.password))
-	} else if c.Agent, e = net.Dial("unix", os.Getenv("SSH_AUTH_SOCK")); e == nil {
-		auths = append(auths, ssh.PublicKeysCallback(agent.NewClient(c.Agent).Signers))
-	}
-
 	config := &ssh.ClientConfig{
 		User: c.User,
-		Auth: auths,
 	}
-	c.Conn, e = ssh.Dial("tcp", fmt.Sprintf("%s:%d", c.Host, c.Port), config)
-	return e
+
+	keys := []ssh.Signer{}
+	if c.password != "" {
+		config.Auth = append(config.Auth, ssh.Password(c.password))
+	}
+	if c.Agent, err = net.Dial("unix", os.Getenv("SSH_AUTH_SOCK")); err == nil {
+		signers, err := agent.NewClient(c.Agent).Signers()
+		if err == nil {
+			keys = append(keys, signers...)
+		}
+	}
+
+	if c.PrivateKey != nil {
+		keys = append(keys, c.PrivateKey)
+	}
+
+	if pk, err := readPrivateKey(os.ExpandEnv("$HOME/.ssh/id_rsa")); err == nil {
+		keys = append(keys, pk)
+	}
+
+	if len(keys) > 0 {
+		config.Auth = append(config.Auth, ssh.PublicKeys(keys...))
+	}
+
+	c.Conn, err = ssh.Dial("tcp", fmt.Sprintf("%s:%d", c.Host, c.Port), config)
+	return err
+}
+
+func readPrivateKey(path string) (ssh.Signer, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+	return ssh.ParsePrivateKey(b)
 }
 
 func (c *Client) Execute(s string) (r *Result, e error) {
