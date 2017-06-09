@@ -96,6 +96,7 @@ func (c *Client) Connect() (err error) {
 	}
 	config := &ssh.ClientConfig{
 		User: c.User,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
 	keys := []ssh.Signer{}
