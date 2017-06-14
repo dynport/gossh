@@ -22,6 +22,7 @@ Golang ssh library
       client := gossh.New("some.host", "user")
       // my default agent authentication is used. use
       // client.SetPassword("<secret>")
+      // client.SetPrivateKey("<PrivateKey path>") if not set this path will read this prv key:$HOME/.ssh/id_rsa 
       // for password authentication
       client.DebugWriter = MakeLogger("DEBUG")
       client.InfoWriter = MakeLogger("INFO ")
