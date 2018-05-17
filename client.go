@@ -95,7 +95,7 @@ func (c *Client) Connect() (err error) {
 		c.Port = 22
 	}
 	config := &ssh.ClientConfig{
-		User: c.User,
+		User:            c.User,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
@@ -215,7 +215,7 @@ func (c *Client) WriteFileCommand(path, content, owner string, mode int) string 
 		cmd += " && sudo chown " + owner + " " + tmpPath
 	}
 	if mode > 0 {
-		cmd += fmt.Sprintf(" && sudo chmod %o %s", mode, tmpPath)
+		cmd += fmt.Sprintf(" && sudo chmod %d %s", mode, tmpPath)
 	}
 	cmd = cmd + " && sudo mv " + tmpPath + " " + path
 	return cmd
